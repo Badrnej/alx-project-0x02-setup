@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Head from 'next/head';
-import Header from '../components/layout/Header';
-import Card from '../components/common/Card';
+import Header from '@/components/layout/Header';
+import Card from '@/components/common/Card';
 import PostModal from '../components/common/PostModal';
 
 interface UserPost {

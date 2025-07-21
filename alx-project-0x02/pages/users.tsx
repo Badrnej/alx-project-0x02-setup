@@ -1,15 +1,25 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
-import Header from '../components/layout/Header';
+import Header from '@/components/layout/Header';
 import UserCard from '../components/common/UserCard';
-import { UserProps } from '../interfaces';
+import { type UserProps } from '../interfaces';
 
-export default function Users() {
-  const [users, setUsers] = useState<UserProps[]>([]);
-  const [loading, setLoading] = useState(true);
+interface UsersPageProps {
+  initialUsers: UserProps[];
+}
+
+export default function Users({ initialUsers }: UsersPageProps) {
+  const [users, setUsers] = useState<UserProps[]>(initialUsers || []);
+  const [loading, setLoading] = useState(!initialUsers?.length);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Si nous avons déjà les données initiales, pas besoin de fetch
+    if (initialUsers?.length > 0) {
+      setLoading(false);
+      return;
+    }
+    
     const fetchUsers = async () => {
       try {
         setLoading(true);
@@ -31,7 +41,7 @@ export default function Users() {
     };
 
     fetchUsers();
-  }, []);
+  }, [initialUsers?.length]);
 
   return (
     <>
@@ -110,4 +120,27 @@ export default function Users() {
       </main>
     </>
   );
+}
+
+// Utilisation de getStaticProps() pour pré-charger les données utilisateurs côté serveur
+export async function getStaticProps() {
+  try {
+    const response = await fetch('https://jsonplaceholder.typicode.com/users');
+    const users = await response.json();
+    
+    return {
+      props: {
+        initialUsers: users,
+      },
+      // Régénération toutes les heures
+      revalidate: 3600,
+    };
+  } catch {
+    return {
+      props: {
+        initialUsers: [],
+      },
+      revalidate: 60, // Réessayer plus fréquemment en cas d'erreur
+    };
+  }
 }

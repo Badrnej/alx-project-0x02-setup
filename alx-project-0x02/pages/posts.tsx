@@ -1,15 +1,25 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
-import Header from '../components/layout/Header';
+import Header from '@/components/layout/Header';
 import PostCard from '../components/common/PostCard';
-import { PostProps } from '../interfaces';
+import { type PostProps } from '../interfaces';
 
-export default function Posts() {
-  const [posts, setPosts] = useState<PostProps[]>([]);
-  const [loading, setLoading] = useState(true);
+interface PostsPageProps {
+  initialPosts: PostProps[];
+}
+
+export default function Posts({ initialPosts }: PostsPageProps) {
+  const [posts, setPosts] = useState<PostProps[]>(initialPosts || []);
+  const [loading, setLoading] = useState(!initialPosts?.length);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Si nous avons déjà les données initiales, pas besoin de fetch
+    if (initialPosts?.length > 0) {
+      setLoading(false);
+      return;
+    }
+    
     const fetchPosts = async () => {
       try {
         setLoading(true);
@@ -31,7 +41,7 @@ export default function Posts() {
     };
 
     fetchPosts();
-  }, []);
+  }, [initialPosts?.length]);
 
   return (
     <>
@@ -99,4 +109,27 @@ export default function Posts() {
       </main>
     </>
   );
+}
+
+// Utilisation de getStaticProps pour pré-charger les données côté serveur
+export async function getStaticProps() {
+  try {
+    const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+    const posts = await response.json();
+    
+    return {
+      props: {
+        initialPosts: posts.slice(0, 12), // Limitons à 12 posts
+      },
+      // Régénération toutes les heures
+      revalidate: 3600,
+    };
+  } catch {
+    return {
+      props: {
+        initialPosts: [],
+      },
+      revalidate: 60, // Réessayer plus fréquemment en cas d'erreur
+    };
+  }
 }
